@@ -72,35 +72,37 @@ if prompt := st.chat_input("e.g. I'm bored and want a quiet coffee"):
         for m in st.session_state.messages
     ]
 
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            text = ""
-            # Try the main model first; if it is busy (503) or rate-limited (429), fall back to the next one.
-            for model_name in dict.fromkeys([MODEL, "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-3.8-flash"]):
-                try:
-                    resp = client.models.generate_content(
-                        model=model_name,
-                        contents=history,
-                        config=types.GenerateContentConfig(system_instruction=SYSTEM, temperature=0.3),
-                    )
-                    text = resp.text or ""
-                    if text:
-                        break
-                except Exception as e:
-                    print(f"Gemini error ({model_name}):", e)
-            if not text:
-                text = "Sorry, I could not answer just now. Please try again in a moment. / عذراً، حاول مرة ثانية بعد لحظة."
+    with st.spinner("Thinking..."):
+        text = ""
+        # Try the main model first. If it is busy (503) or out of free quota (429), fall back to the next one.
+        # Free-tier quotas are per model, so each fallback adds more free requests per day.
+        for model_name in dict.fromkeys([MODEL, "gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.8-flash",
+                                         "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                                         "gemini-flash-lite-latest"]):
+            try:
+                resp = client.models.generate_content(
+                    model=model_name,
+                    contents=history,
+                    config=types.GenerateContentConfig(system_instruction=SYSTEM, temperature=0.3),
+                )
+                text = resp.text or ""
+                if text:
+                    break
+            except Exception as e:
+                print(f"Gemini error ({model_name}):", str(e)[:200])
+        if not text:
+            text = "Sorry, I could not answer just now. Please try again in a moment. / عذراً، حاول مرة ثانية بعد لحظة."
 
-        # Pull the TOPIC line out for the insights panel
-        answer_lines, topic = [], None
-        for line in text.splitlines():
-            if line.strip().strip("*").upper().startswith("TOPIC:"):
-                topic = line.split(":", 1)[1].strip().strip("*").strip()
-            else:
-                answer_lines.append(line)
-        answer = "\n".join(answer_lines).strip()
-        st.markdown(answer)
+    # Pull the TOPIC line out for the insights panel
+    answer_lines, topic = [], None
+    for line in text.splitlines():
+        if line.strip().strip("*").upper().startswith("TOPIC:"):
+            topic = line.split(":", 1)[1].strip().strip("*").strip()
+        else:
+            answer_lines.append(line)
+    answer = "\n".join(answer_lines).strip()
 
+    # The answer is drawn once, by the chat history loop above, after the rerun.
     st.session_state.messages.append({"role": "assistant", "content": answer})
     if topic:
         st.session_state.questions.append(topic)
