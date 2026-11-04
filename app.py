@@ -9,7 +9,12 @@ from google.genai import types
 st.set_page_config(page_title="Msheireb Companion", page_icon="🌴")
 
 # ---------- Setup ----------
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+# No automatic retries on the same model and a 25 s limit per call: if a model is busy or out of quota,
+# the app moves straight on to the next fallback model instead of making the visitor wait.
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"],
+    http_options=types.HttpOptions(timeout=25_000, retry_options=types.HttpRetryOptions(attempts=1)),
+)
 MODEL = st.secrets.get("GEMINI_MODEL", "gemini-3.5-flash")
 
 with open("data.json", encoding="utf-8") as f:
@@ -92,6 +97,7 @@ Rules:
 - Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply).
 - Always write numbers with Western digits 0-9, also in Arabic replies (e.g. "38 درجة"). Never use Arabic-Indic digits like ٣٨.
 - Some places have an "area" (barahat = Barahat Msheireb & Al Kahraba, wadi = Wadi Msheireb & Doha Design District, heritage = Heritage Quarter & M7, galleria = Msheireb Galleria). Mention the area briefly when you suggest such a place. Never invent step-by-step walking directions; a map and directions link are shown automatically below your reply.
+- Some places have a "location" (street, building and what it is next to). When you suggest such a place, add its location in a few words. If the visitor asks where a place is (e.g. "where is it?", "وينه؟"), answer from its "location" and "area". If a place has no "location", say honestly that you don't have its exact spot yet, give its area if known, and point to the Directions link below.
 {PARKING_INFO}
 Lost visitors and wayfinding:
 - If the visitor is lost, in the parking, or asks how to get somewhere: if you don't know where they are, ask ONE short question about what they can see right now (a shop, café, square, hotel or sign).
