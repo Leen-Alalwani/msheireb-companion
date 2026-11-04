@@ -49,7 +49,8 @@ Current temperature: {temp}°C. Time of day: {time_of_day}.
 Rules:
 - Give 2-3 short suggestions that match the visitor's mood, need and the time.
 - If the temperature is 35°C or above, prefer indoor or shaded places and suggest the tram or metro instead of long walks.
-- Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply, e.g. write 38 درجة not 38°C).
+- Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply).
+- Always write numbers with Western digits 0-9, also in Arabic replies (e.g. "38 درجة"). Never use Arabic-Indic digits like ٣٨.
 - At the very end, on its own line, write: TOPIC: <one or two English words describing what the visitor wanted, e.g. coffee, kids activity, vegetarian food, museum>.
 - If nothing in the list fits, say so honestly and still write the TOPIC line with 'unmet: ' before it."""
 
@@ -57,14 +58,20 @@ Rules:
 st.title("🌴 Msheireb Companion")
 st.caption("Tell me your mood or what you need, and I'll suggest something nearby.")
 
+def show(text):
+    # dir="auto" lets the browser pick right-to-left for Arabic and left-to-right for English.
+    # The blank lines keep markdown (bold, lists) working inside the HTML wrapper.
+    st.markdown(f'<div dir="auto">\n\n{text}\n\n</div>', unsafe_allow_html=True)
+
+
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        st.markdown(m["content"])
+        show(m["content"])
 
 if prompt := st.chat_input("e.g. I'm bored and want a quiet coffee"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(prompt)
+        show(prompt)
 
     history = [
         types.Content(role="user" if m["role"] == "user" else "model",
