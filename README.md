@@ -4,8 +4,9 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 
 ## Files
 - `app.py` – Streamlit app (chat + live context + insights panel)
-- `data.json` – knowledge base: 161 Msheireb venues, shops, museums, activities, squares and transport
+- `data.json` – knowledge base: 162 Msheireb venues, shops, museums, activities, squares and transport
 - `requirements.txt` – Python packages
+- `maps/` – ground-floor maps of the four Msheireb areas, shown under answers
 - `secrets.toml.example` – template for the API key
 
 ## Run it
@@ -17,4 +18,4 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 ## Demo prompts
 1. Arabic (any dialect, answered in Qatari dialect): `مرحبا انا ما بعرف وين روح وعندي بس ساعة اشرب فيها قهوة`
 2. Heat: set temperature to 44°C, then ask `I have one hour, what can I do?`
-3. Unmet need: `Is there a gym where I can work out?` – the sidebar logs it as "unmet: gym".
+3. Unmet need: `Is there an ice skating rink for my kids?` – the sidebar logs it as "unmet: ice skating".

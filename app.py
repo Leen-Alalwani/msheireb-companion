@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from urllib.parse import quote_plus
 
 import streamlit as st
 from google import genai
@@ -13,6 +14,32 @@ MODEL = st.secrets.get("GEMINI_MODEL", "gemini-3.5-flash")
 
 with open("data.json", encoding="utf-8") as f:
     PLACES = json.load(f)
+PLACE_BY_NAME = {p["name"]: p for p in PLACES}
+
+# Ground-floor map areas (images in maps/). Places in data.json carry an "area" key when known.
+AREAS = {
+    "barahat": {"title": "Barahat Msheireb & Al Kahraba", "ar": "براحة مشيرب والكهرباء", "map": "maps/barahat-kahraba.png"},
+    "wadi": {"title": "Wadi Msheireb & Doha Design District", "ar": "وادي مشيرب وحي الدوحة للتصميم", "map": "maps/wadi-design-district.png"},
+    "heritage": {"title": "Heritage Quarter & M7", "ar": "الحي التراثي و M7", "map": "maps/heritage-quarter.png"},
+    "galleria": {"title": "Msheireb Galleria", "ar": "مشيرب غاليريا", "map": "maps/galleria.png"},
+}
+NO_DIRECTIONS_TYPES = {"transport", "parking"}
+
+
+def directions_url(name):
+    return ("https://www.google.com/maps/dir/?api=1&travelmode=walking&destination="
+            + quote_plus(f"{name} Msheireb Downtown Doha"))
+
+
+def match_place(raw):
+    """Map a name the model wrote to a real place in data.json (exact first, then containment)."""
+    raw = raw.strip().strip("*").strip()
+    if raw in PLACE_BY_NAME:
+        return raw
+    for name in PLACE_BY_NAME:
+        if len(raw) >= 3 and (raw in name or name in raw):
+            return name
+    return None
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -51,6 +78,8 @@ Rules:
 - If the temperature is 35°C or above, prefer indoor or shaded places and suggest the tram or metro instead of long walks.
 - Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply).
 - Always write numbers with Western digits 0-9, also in Arabic replies (e.g. "38 درجة"). Never use Arabic-Indic digits like ٣٨.
+- Some places have an "area" (barahat = Barahat Msheireb & Al Kahraba, wadi = Wadi Msheireb & Doha Design District, heritage = Heritage Quarter & M7, galleria = Msheireb Galleria). Mention the area briefly when you suggest such a place. Never invent step-by-step walking directions; a map and directions link are shown automatically below your reply.
+- Near the end, on its own line, write: PLACES: <the exact names, copied from the list, of the places you suggested, separated by |>, or PLACES: none.
 - At the very end, on its own line, write: TOPIC: <one or two English words describing what the visitor wanted, e.g. coffee, kids activity, vegetarian food, museum>.
 - If nothing in the list fits, say so honestly and still write the TOPIC line with 'unmet: ' before it."""
 
@@ -64,9 +93,27 @@ def show(text):
     st.markdown(f'<div dir="auto">\n\n{text}\n\n</div>', unsafe_allow_html=True)
 
 
+def show_places(names):
+    """Directions links for the suggested places, plus the ground-floor map of their area."""
+    linkable = [n for n in names if PLACE_BY_NAME[n].get("type") not in NO_DIRECTIONS_TYPES]
+    if linkable:
+        links = " · ".join(f"[{n}]({directions_url(n)})" for n in linkable)
+        show(f"📍 **Directions:** {links}")
+    for area in dict.fromkeys(PLACE_BY_NAME[n]["area"] for n in names if "area" in PLACE_BY_NAME[n]):
+        here = "، ".join(n for n in names if PLACE_BY_NAME[n].get("area") == area)
+        with st.expander(f"🗺️ {AREAS[area]['title']} — {here}"):
+            st.image(AREAS[area]["map"], caption=f"Ground floor: {AREAS[area]['title']} / {AREAS[area]['ar']}")
+
+
+with st.expander("🗺️ Msheireb ground-floor map"):
+    for tab, area in zip(st.tabs([a["title"] for a in AREAS.values()]), AREAS.values()):
+        tab.image(area["map"])
+
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         show(m["content"])
+        if m.get("places"):
+            show_places(m["places"])
 
 if prompt := st.chat_input("e.g. I'm bored and want a quiet coffee"):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -100,17 +147,23 @@ if prompt := st.chat_input("e.g. I'm bored and want a quiet coffee"):
         if not text:
             text = "Sorry, I could not answer just now. Please try again in a moment. / عذراً، حاول مرة ثانية بعد لحظة."
 
-    # Pull the TOPIC line out for the insights panel
-    answer_lines, topic = [], None
+    # Pull out the hidden TOPIC line (insights panel) and PLACES line (directions + maps)
+    answer_lines, topic, places = [], None, []
     for line in text.splitlines():
-        if line.strip().strip("*").upper().startswith("TOPIC:"):
+        key = line.strip().strip("*").upper()
+        if key.startswith("TOPIC:"):
             topic = line.split(":", 1)[1].strip().strip("*").strip()
+        elif key.startswith("PLACES:"):
+            for raw in line.split(":", 1)[1].split("|"):
+                name = match_place(raw)
+                if name and name not in places:
+                    places.append(name)
         else:
             answer_lines.append(line)
     answer = "\n".join(answer_lines).strip()
 
     # The answer is drawn once, by the chat history loop above, after the rerun.
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+    st.session_state.messages.append({"role": "assistant", "content": answer, "places": places})
     if topic:
         st.session_state.questions.append(topic)
     st.rerun()
