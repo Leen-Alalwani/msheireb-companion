@@ -18,11 +18,24 @@ PLACE_BY_NAME = {p["name"]: p for p in PLACES}
 
 # Ground-floor map areas (images in maps/). Places in data.json carry an "area" key when known.
 AREAS = {
-    "barahat": {"title": "Barahat Msheireb & Al Kahraba", "ar": "براحة مشيرب والكهرباء", "map": "maps/barahat-kahraba.png"},
-    "wadi": {"title": "Wadi Msheireb & Doha Design District", "ar": "وادي مشيرب وحي الدوحة للتصميم", "map": "maps/wadi-design-district.png"},
-    "heritage": {"title": "Heritage Quarter & M7", "ar": "الحي التراثي و M7", "map": "maps/heritage-quarter.png"},
-    "galleria": {"title": "Msheireb Galleria", "ar": "مشيرب غاليريا", "map": "maps/galleria.png"},
+    "barahat": {"title": "Barahat Msheireb & Al Kahraba", "ar": "براحة مشيرب والكهرباء",
+                "map": "maps/barahat-kahraba.png", "b1": "maps/b1-barahat.png"},
+    "wadi": {"title": "Wadi Msheireb & Doha Design District", "ar": "وادي مشيرب وحي الدوحة للتصميم",
+             "map": "maps/wadi-design-district.png", "b1": "maps/b1-wadi.png"},
+    "heritage": {"title": "Heritage Quarter & M7", "ar": "الحي التراثي و M7",
+                 "map": "maps/heritage-quarter.png", "b1": None},
+    "galleria": {"title": "Msheireb Galleria", "ar": "مشيرب غاليريا",
+                 "map": "maps/galleria.png", "b1": "maps/b1-galleria.png"},
 }
+
+# What the parking maps (basement B1) show. Lift-core names are not readable yet, so no lift-by-lift routes.
+PARKING_INFO = """Parking basement B1 (colour zones on the parking signs and maps):
+- Olive = Public (visitors), purple = Commercial, gold = VIP, teal = Residential, grey-brown = Others (staff, tenants).
+- Main public visitor parking on B1: the large olive zone under the Galleria side (between the Museum Staff / Mosque parking and Virgin Active), and the olive zone on the Wadi side near Suhail Holding and Park Hyatt Doha.
+- Commercial parking (purple) is next to Virgin Active, on the Galleria side.
+- The Barahat side of B1 (under Qatar Academy, Mandarin Oriental, QMA) is mostly residential, VIP and staff parking.
+- Ramps marked "UL0" go up to street level; ramps marked "B2" go down to level B2.
+- To reach any shop or restaurant from the parking, take the nearest lift up to the ground floor (G)."""
 NO_DIRECTIONS_TYPES = {"transport", "parking"}
 
 
@@ -79,6 +92,11 @@ Rules:
 - Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply).
 - Always write numbers with Western digits 0-9, also in Arabic replies (e.g. "38 درجة"). Never use Arabic-Indic digits like ٣٨.
 - Some places have an "area" (barahat = Barahat Msheireb & Al Kahraba, wadi = Wadi Msheireb & Doha Design District, heritage = Heritage Quarter & M7, galleria = Msheireb Galleria). Mention the area briefly when you suggest such a place. Never invent step-by-step walking directions; a map and directions link are shown automatically below your reply.
+{PARKING_INFO}
+Lost visitors and wayfinding:
+- If the visitor is lost, in the parking, or asks how to get somewhere: if you don't know where they are, ask ONE short question about what they can see right now (a shop, café, square, hotel or sign).
+- Once you know a nearby place, tell them which area they are in and which area the destination is in, and that the maps are shown below. Give simple, honest guidance only (e.g. "take the lift up to the ground floor, you'll be in the Galleria area"). Never invent turn-by-turn routes, lift numbers or distances.
+- Include BOTH the place they are next to and the destination in the PLACES line, so both maps are shown.
 - Near the end, on its own line, write: PLACES: <the exact names, copied from the list, of the places you suggested, separated by |>, or PLACES: none.
 - At the very end, on its own line, write: TOPIC: <one or two English words describing what the visitor wanted, e.g. coffee, kids activity, vegetarian food, museum>.
 - If nothing in the list fits, say so honestly and still write the TOPIC line with 'unmet: ' before it."""
@@ -101,13 +119,24 @@ def show_places(names):
         show(f"📍 **Directions:** {links}")
     for area in dict.fromkeys(PLACE_BY_NAME[n]["area"] for n in names if "area" in PLACE_BY_NAME[n]):
         here = "، ".join(n for n in names if PLACE_BY_NAME[n].get("area") == area)
-        with st.expander(f"🗺️ {AREAS[area]['title']} — {here}"):
-            st.image(AREAS[area]["map"], caption=f"Ground floor: {AREAS[area]['title']} / {AREAS[area]['ar']}")
+        a = AREAS[area]
+        with st.expander(f"🗺️ {a['title']} — {here}"):
+            if a["b1"]:
+                ground, parking = st.tabs(["Ground floor (G)", "Parking B1"])
+                ground.image(a["map"], caption=f"Ground floor: {a['title']} / {a['ar']}")
+                parking.image(a["b1"], caption="Parking B1 under this area. Olive = public visitor parking.")
+            else:
+                st.image(a["map"], caption=f"Ground floor: {a['title']} / {a['ar']}")
 
 
-with st.expander("🗺️ Msheireb ground-floor map"):
+with st.expander("🗺️ Msheireb maps: ground floor and parking B1"):
+    st.markdown("**Ground floor (G)**")
     for tab, area in zip(st.tabs([a["title"] for a in AREAS.values()]), AREAS.values()):
         tab.image(area["map"])
+    st.markdown("**Parking B1** — olive = public, purple = commercial, gold = VIP, teal = residential, grey = others")
+    b1_areas = [a for a in AREAS.values() if a["b1"]]
+    for tab, area in zip(st.tabs([a["title"] for a in b1_areas]), b1_areas):
+        tab.image(area["b1"])
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
