@@ -20,3 +20,8 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 2. Heat: set temperature to 44°C, then ask `I have one hour, what can I do?`
 3. Unmet need: `Is there an ice skating rink for my kids?` – the sidebar logs it as "unmet: ice skating".
 4. Lost in the parking: `I just came out of the elevator next to Virgin Active, how do I get to Harrods Tea Room?` – shows where you are and where to go, with both maps.
+
+## Copyright
+© 2026 Power Palm. All rights reserved. See [LICENSE](LICENSE). This code, its prompts and its data may not be copied, reused or redistributed without written permission from Power Palm.
+
+Map images in `maps/` © Msheireb Properties, used for demonstration only.

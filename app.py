@@ -1,3 +1,6 @@
+# Msheireb Companion
+# © 2026 Power Palm. All rights reserved. See LICENSE.
+
 import json
 from collections import Counter
 from urllib.parse import quote_plus
@@ -80,6 +83,9 @@ with st.sidebar:
     else:
         st.write("No questions yet.")
 
+    st.divider()
+    st.caption("© 2026 Power Palm. All rights reserved.  \nMaps © Msheireb Properties.")
+
 # ---------- Prompt ----------
 SYSTEM = f"""You are Msheireb Companion, a friendly assistant for visitors to Msheireb Downtown Doha.
 Language rules:
@@ -109,7 +115,7 @@ Lost visitors and wayfinding:
 
 # ---------- Chat ----------
 st.title("🌴 Msheireb Companion")
-st.caption("Tell me your mood or what you need, and I'll suggest something nearby.")
+st.caption("Tell me your mood or what you need, and I'll suggest something nearby.  \n© 2026 Power Palm. All rights reserved.")
 
 def show(text):
     # dir="auto" lets the browser pick right-to-left for Arabic and left-to-right for English.
