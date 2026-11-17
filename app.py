@@ -15,15 +15,18 @@ from google.genai import types
 st.set_page_config(page_title="Msheireb Companion", page_icon="🌴")
 
 # ---------- Setup ----------
-# One attempt per model and a 15 s limit: if a model is busy or out of quota the app moves straight
-# to the single backup model, so the longest a visitor can wait for an error is about 30 s.
+# One attempt per model and a 15 s limit: if a model is busy (503) or out of quota (429) the app moves
+# straight to the next one. The "lite" models come right after the main one: they answer in about
+# a second and stay available when the bigger models are overloaded. Each model also has its own
+# free daily quota, so more backups mean more free answers per day.
 client = genai.Client(
     api_key=st.secrets["GEMINI_API_KEY"],
     http_options=types.HttpOptions(timeout=15_000, retry_options=types.HttpRetryOptions(attempts=1)),
 )
 MODEL = st.secrets.get("GEMINI_MODEL", "gemini-3.5-flash")
 FALLBACK_MODEL = st.secrets.get("GEMINI_FALLBACK_MODEL", "gemini-flash-latest")
-MODELS = list(dict.fromkeys([MODEL, FALLBACK_MODEL]))
+MODELS = list(dict.fromkeys([MODEL, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                             "gemini-flash-lite-latest", FALLBACK_MODEL]))
 
 # Presenter view (sliders + insights panel) is opened with ?presenter=1 in the URL.
 # Visitors never see it: they get today's temperature from the secrets file and the real Doha time.
@@ -81,7 +84,7 @@ UI = {
         "parking": "مواقف B1",
         "parking_key": "زيتي = عام، بنفسجي = تجاري، ذهبي = VIP، أخضر مزرق = سكني، رمادي = أخرى",
         "parking_caption": "مواقف B1 تحت هذه المنطقة. الزيتي = مواقف الزوار العامة.",
-        "error": "عذراً، ما قدرت أرد الحين. حاول مرة ثانية بعد لحظة.",
+        "error": "السموحة، ما قدرت أرد الحين. حاول مرة ثانية بعد لحظة.",
         "chips": [("☕ قهوة", "أبي قهوة في مكان هادي"),
                   ("🧭 ضايع", "أنا ضايع وما أعرف وين أروح"),
                   ("🧒 أطفال", "وين آخذ العيال يلعبون؟"),
@@ -186,6 +189,7 @@ Rules:
 - Give 2-3 short suggestions that match the visitor's mood, need and the time.
 - If the temperature is 35°C or above, prefer indoor or shaded places and suggest the tram or metro instead of long walks.
 - Keep answers short and warm. Write the whole reply in one language (no English words inside an Arabic reply).
+- When you apologise in Arabic, say "السموحة" (Qatari), never "عذراً" or "آسف".
 - Always write numbers with Western digits 0-9, also in Arabic replies (e.g. "38 درجة"). Never use Arabic-Indic digits like ٣٨.
 - You do not have opening hours. If the visitor asks whether a place is open, say honestly that you don't have its hours yet.
 - Some places have an "area" (barahat = Barahat Msheireb & Al Kahraba, wadi = Wadi Msheireb & Doha Design District, heritage = Heritage Quarter & M7, galleria = Msheireb Galleria). Mention the area briefly when you suggest such a place. Never invent step-by-step walking directions; a map and directions link are shown automatically below your reply.
