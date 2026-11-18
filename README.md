@@ -7,6 +7,8 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 - `data.json` – knowledge base: 162 Msheireb venues, shops, museums, activities, squares and transport
 - `requirements.txt` – Python packages
 - `maps/` – ground-floor and parking (B1) maps of the Msheireb areas, shown under answers
+- `tools/enrich_from_osm.py` – adds English names, exact map pins and "near" notes to `data.json` from OpenStreetMap
+- `sources/` – the OpenStreetMap places inside Msheireb Downtown's official outline, the outline itself, and `to_review.md` (places to check before adding)
 - `secrets.toml.example` – template for the API key
 
 ## Run it
@@ -20,6 +22,9 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 - The presenter opens the same link with `?presenter=1` at the end (e.g. `http://localhost:8501/?presenter=1`). This adds the sidebar with the temperature and time controls and the insights panel.
 - The insights panel counts topic labels from every visitor of the running app. No chat text is stored, and the counts reset when the app restarts.
 
+## Updating the place data
+`python tools/enrich_from_osm.py` re-applies the OpenStreetMap names and pins to `data.json`. Only places inside Msheireb Downtown's official outline are used. New places are never added automatically; they are listed in `sources/to_review.md` for a person to check. For the pilot, the same step can read Msheireb's official directory instead.
+
 ## Demo prompts
 1. Arabic (any dialect, answered in Qatari dialect): `مرحبا انا ما بعرف وين روح وعندي بس ساعة اشرب فيها قهوة`
 2. Heat: in the presenter view, set temperature to 44°C, then ask `I have one hour, what can I do?`
@@ -30,3 +35,5 @@ An AI visitor guide for Msheireb Downtown Doha. Visitors chat in Qatari/Gulf Ara
 © 2026 Power Palm. All rights reserved. See [LICENSE](LICENSE). This code, its prompts and its data may not be copied, reused or redistributed without written permission from Power Palm.
 
 Map images in `maps/` © Msheireb Properties, used for demonstration only.
+
+Place names and pins in `sources/` and the `en`, `lat`, `lon` fields of `data.json`: © OpenStreetMap contributors, available under the Open Database License (https://www.openstreetmap.org/copyright).
